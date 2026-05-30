@@ -6,9 +6,7 @@ const QUIZ_REWARD = 3000;
 const REFERRAL_REWARD = 599;
 const REDEEM_COST = 3000;
 const REDEEM_USDT = 3;
-const BSC_CHAIN_ID = "0x38";
-const BSC_USDT = "0x55d398326f99059fF775485246999027B3197955";
-const USDT_DECIMALS = 18;
+const MIN_WITHDRAW_USDT = 10;
 
 const quizQuestions = [
   {
@@ -103,6 +101,7 @@ const els = {
   logoutBtn: document.querySelector("#logoutBtn"),
   userText: document.querySelector("#userText"),
   pointsText: document.querySelector("#pointsText"),
+  usdtBalanceText: document.querySelector("#usdtBalanceText"),
   walletText: document.querySelector("#walletText"),
   inviteCodeText: document.querySelector("#inviteCodeText"),
   copyInviteBtn: document.querySelector("#copyInviteBtn"),
@@ -116,9 +115,8 @@ const els = {
   redeemBtn: document.querySelector("#redeemBtn"),
   redeemMessage: document.querySelector("#redeemMessage"),
   redeemList: document.querySelector("#redeemList"),
-  transferForm: document.querySelector("#transferForm"),
-  transferBtn: document.querySelector("#transferBtn"),
-  transferMessage: document.querySelector("#transferMessage"),
+  withdrawBtn: document.querySelector("#withdrawBtn"),
+  withdrawMessage: document.querySelector("#withdrawMessage"),
 };
 
 let currentUser = "";
@@ -165,6 +163,7 @@ function normalizeProfile(profile) {
     ? {
         username: profile.username,
         points: Number(profile.points || 0),
+        usdtBalance: Number(profile.usdtBalance || 0),
         quizCompleted: Boolean(profile.quizCompleted),
         boundWallet: profile.boundWallet || "",
         inviteCode: profile.inviteCode || "",
@@ -223,6 +222,10 @@ async function dbBindWallet(wallet) {
 
 async function dbCreateRedeemRequest() {
   return normalizeProfile(await callRpc("app_create_redeem", { session_token: dbSessionToken() }));
+}
+
+async function dbCreateWithdrawalRequest() {
+  return normalizeProfile(await callRpc("app_create_withdrawal", { session_token: dbSessionToken() }));
 }
 
 function readUsers() {
@@ -303,6 +306,7 @@ function renderProfile() {
   const profile = currentUserRecord();
   els.userText.textContent = currentUser || "-";
   els.pointsText.textContent = String(profile?.points || 0);
+  els.usdtBalanceText.textContent = `${Number(profile?.usdtBalance || 0).toFixed(2)} USDT`;
   els.walletText.textContent = shortAddress(profile?.boundWallet || walletAddress);
   els.inviteCodeText.textContent = profile?.inviteCode || "-";
 
@@ -423,12 +427,8 @@ async function claimQuizReward() {
   renderProfile();
 }
 
-async function createRedeemRequest() {
+async function redeemPointsToPageUsdt() {
   const profile = currentUserRecord();
-  if (!profile?.boundWallet) {
-    throw new Error("Please connect and bind your TP wallet first.");
-  }
-
   if (Number(profile.points || 0) < REDEEM_COST) {
     throw new Error(`Insufficient points. Need ${REDEEM_COST} points.`);
   }
@@ -439,12 +439,38 @@ async function createRedeemRequest() {
     const users = readUsers();
     const user = users[currentUser];
     user.points = Number(user.points || 0) - REDEEM_COST;
+    user.usdtBalance = Number(user.usdtBalance || 0) + REDEEM_USDT;
+    user.redeemRequests = user.redeemRequests || [];
+    writeUsers(users);
+    currentProfile = { username: currentUser, ...user };
+  }
+
+  renderProfile();
+}
+
+async function createWithdrawalRequest() {
+  const profile = currentUserRecord();
+  if (!profile?.boundWallet) {
+    throw new Error("Please connect and bind your TP wallet first.");
+  }
+
+  if (Number(profile.usdtBalance || 0) < MIN_WITHDRAW_USDT) {
+    throw new Error(`Insufficient page USDT. Need at least ${MIN_WITHDRAW_USDT} USDT.`);
+  }
+
+  if (usingDatabase()) {
+    currentProfile = await dbCreateWithdrawalRequest();
+  } else {
+    const users = readUsers();
+    const user = users[currentUser];
+    const withdrawAmount = Number(user.usdtBalance || 0);
+    user.usdtBalance = 0;
     user.redeemRequests = user.redeemRequests || [];
     user.redeemRequests.push({
       id: `R${Date.now()}`,
       status: "pending",
-      pointsCost: REDEEM_COST,
-      usdtAmount: REDEEM_USDT,
+      pointsCost: 0,
+      usdtAmount: withdrawAmount,
       wallet: user.boundWallet,
       createdAt: new Date().toISOString(),
     });
@@ -453,85 +479,6 @@ async function createRedeemRequest() {
   }
 
   renderProfile();
-}
-
-async function ensureBscNetwork() {
-  const walletProvider = provider();
-  const chainId = await walletProvider.request({ method: "eth_chainId" });
-  if (chainId === BSC_CHAIN_ID) {
-    return;
-  }
-
-  try {
-    await walletProvider.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: BSC_CHAIN_ID }],
-    });
-  } catch (error) {
-    if (error.code !== 4902) {
-      throw error;
-    }
-
-    await walletProvider.request({
-      method: "wallet_addEthereumChain",
-      params: [
-        {
-          chainId: BSC_CHAIN_ID,
-          chainName: "BNB Smart Chain",
-          nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-          rpcUrls: ["https://bsc-dataseed.binance.org"],
-          blockExplorerUrls: ["https://bscscan.com"],
-        },
-      ],
-    });
-  }
-}
-
-function parseUnits(value, decimals) {
-  const normalized = String(value).trim();
-  if (!/^\d+(\.\d+)?$/.test(normalized)) {
-    throw new Error("Invalid USDT amount.");
-  }
-  const [whole, fraction = ""] = normalized.split(".");
-  const padded = `${fraction}${"0".repeat(decimals)}`.slice(0, decimals);
-  return BigInt(whole) * 10n ** BigInt(decimals) + BigInt(padded);
-}
-
-function encodeErc20Transfer(to, amount) {
-  const cleanTo = to.toLowerCase().replace(/^0x/, "");
-  const amountHex = amount.toString(16).padStart(64, "0");
-  return `0xa9059cbb${cleanTo.padStart(64, "0")}${amountHex}`;
-}
-
-async function transferUsdt(to, amount) {
-  if (!/^0x[a-fA-F0-9]{40}$/.test(to)) {
-    throw new Error("Invalid recipient address.");
-  }
-
-  const walletProvider = provider();
-  if (!walletProvider) {
-    throw new Error("Open this page inside TP Wallet DApp browser.");
-  }
-
-  if (!walletAddress) {
-    await connectAndBindWallet();
-  }
-
-  await ensureBscNetwork();
-  const value = parseUnits(amount, USDT_DECIMALS);
-  const txHash = await walletProvider.request({
-    method: "eth_sendTransaction",
-    params: [
-      {
-        from: walletAddress,
-        to: BSC_USDT,
-        data: encodeErc20Transfer(to, value),
-        value: "0x0",
-      },
-    ],
-  });
-
-  return txHash;
 }
 
 els.showLoginBtn.addEventListener("click", () => setAuthMode("login"));
@@ -584,6 +531,7 @@ els.registerForm.addEventListener("submit", async (event) => {
         salt,
         passwordHash: await hashPassword(password, salt),
         points: 0,
+        usdtBalance: 0,
         quizCompleted: false,
         boundWallet: "",
         inviteCode: createInviteCode(username),
@@ -650,8 +598,8 @@ els.submitQuizBtn.addEventListener("click", async () => {
 els.redeemBtn.addEventListener("click", async () => {
   try {
     els.redeemBtn.disabled = true;
-    await createRedeemRequest();
-    setMessage(els.redeemMessage, "Payout request submitted. Please wait for USDT release.", true);
+    await redeemPointsToPageUsdt();
+    setMessage(els.redeemMessage, "3000 points redeemed to 3 page USDT.", true);
   } catch (error) {
     setMessage(els.redeemMessage, error.message);
   } finally {
@@ -659,21 +607,15 @@ els.redeemBtn.addEventListener("click", async () => {
   }
 });
 
-els.transferForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const data = new FormData(els.transferForm);
-
+els.withdrawBtn.addEventListener("click", async () => {
   try {
-    els.transferBtn.disabled = true;
-    els.transferBtn.textContent = "等待 TP 钱包确认";
-    const txHash = await transferUsdt(data.get("to"), data.get("amount"));
-    setMessage(els.transferMessage, `USDT transfer submitted: ${txHash}`, true);
-    els.transferForm.reset();
+    els.withdrawBtn.disabled = true;
+    await createWithdrawalRequest();
+    setMessage(els.withdrawMessage, "Withdrawal request submitted. Waiting for backend approval.", true);
   } catch (error) {
-    setMessage(els.transferMessage, error.message);
+    setMessage(els.withdrawMessage, error.message);
   } finally {
-    els.transferBtn.disabled = false;
-    els.transferBtn.textContent = "从 TP 钱包转出 USDT";
+    els.withdrawBtn.disabled = false;
   }
 });
 
