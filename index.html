@@ -3,18 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0f172a" />
-    <title>TP DApp</title>
+    <meta name="theme-color" content="#0b1220" />
+    <title>TP Rewards</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <section id="authScreen" class="auth-screen">
       <div class="auth-card">
-        <p class="eyebrow">TP DApp</p>
-        <h1>&#30331;&#24405;&#20351;&#29992;</h1>
-        <p class="muted">&#27880;&#20876;&#21518;&#23436;&#25104;&#38382;&#21367;&#65292;&#33719;&#21462;&#31215;&#20998;&#24182;&#25552;&#20132; USDT &#19979;&#21457;&#30003;&#35831;&#12290;</p>
+        <div class="brand-mark">TP</div>
+        <p class="eyebrow">&#23448;&#26041;&#20219;&#21153;&#20013;&#24515;</p>
+        <h1>&#30331;&#24405; TP Rewards</h1>
+        <p class="muted">&#23436;&#25104;&#38382;&#21367;&#20219;&#21153;&#33719;&#21462;&#31215;&#20998;&#65292;&#20817;&#25442;&#39029;&#38754; USDT&#65292;&#24182;&#30003;&#35831;&#36716;&#20986;&#21040;&#24050;&#32465;&#23450;&#30340; TP &#38065;&#21253;&#12290;</p>
 
-        <div class="tabs">
+        <div class="tabs" role="tablist" aria-label="auth mode">
           <button id="showLoginBtn" class="tab active" type="button">&#30331;&#24405;</button>
           <button id="showRegisterBtn" class="tab" type="button">&#27880;&#20876;</button>
         </div>
@@ -52,12 +53,29 @@
     </section>
 
     <main class="app">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">TP DApp</p>
-          <h1>&#38382;&#21367;&#31215;&#20998;&#19982; USDT &#19979;&#21457;</h1>
+      <header class="hero">
+        <nav class="topbar">
+          <div class="brand">
+            <div class="brand-mark">TP</div>
+            <div>
+              <strong>TP Rewards</strong>
+              <span>&#20219;&#21153;&#31215;&#20998;&#19982; USDT &#31649;&#29702;</span>
+            </div>
+          </div>
+          <button id="logoutBtn" class="ghost-btn" type="button">&#36864;&#20986;</button>
+        </nav>
+
+        <div class="hero-content">
+          <div>
+            <p class="eyebrow">&#39029;&#38754;&#36164;&#20135;&#38656;&#21518;&#21488;&#23457;&#26680;&#21518;&#19979;&#21457;</p>
+            <h1>&#38382;&#21367;&#20219;&#21153;&#12289;&#31639;&#21147;&#25910;&#30410;&#19982; USDT &#36716;&#20986;&#30003;&#35831;</h1>
+            <p>&#29992;&#25143;&#23436;&#25104;&#20219;&#21153;&#33719;&#21462;&#31215;&#20998;&#65292;&#20817;&#25442;&#39029;&#38754; USDT&#12290;&#39029;&#38754; USDT &#28385; 10 &#21518;&#21487;&#30003;&#35831;&#36716;&#20986;&#21040;&#32465;&#23450;&#30340; TP &#38065;&#21253;&#65292;&#38656;&#31561;&#24453;&#21518;&#21488;&#23457;&#26680;&#22788;&#29702;&#12290;</p>
+          </div>
+          <div class="hero-badge">
+            <span>&#36215;&#25552;&#38376;&#27099;</span>
+            <strong>10 USDT</strong>
+          </div>
         </div>
-        <button id="logoutBtn" class="ghost-btn" type="button">&#36864;&#20986;</button>
       </header>
 
       <section class="summary">
@@ -87,70 +105,104 @@
         </article>
       </section>
 
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>&#36992;&#35831;&#22909;&#21451;</h2>
-            <p>&#25226;&#20320;&#30340;&#36992;&#35831;&#30721;&#21457;&#32473;&#26032;&#29992;&#25143;&#65292;&#23545;&#26041;&#27880;&#20876;&#25104;&#21151;&#21518;&#65292;&#20320;&#33719;&#24471; 599 &#31215;&#20998;&#12290;</p>
-          </div>
-          <button id="copyInviteBtn" class="primary-btn compact" type="button">&#22797;&#21046;&#36992;&#35831;&#30721;</button>
-        </div>
-        <p id="inviteMessage" class="message"></p>
+      <section class="process">
+        <article>
+          <span>01</span>
+          <strong>&#32465;&#23450;&#38065;&#21253;</strong>
+          <p>&#36830;&#25509; TP &#24182;&#32465;&#23450;&#25509;&#25910;&#22320;&#22336;</p>
+        </article>
+        <article>
+          <span>02</span>
+          <strong>&#23436;&#25104;&#38382;&#21367;</strong>
+          <p>&#25552;&#20132; 20 &#39064;&#21518;&#33719;&#24471; 3000 &#31215;&#20998;</p>
+        </article>
+        <article>
+          <span>03</span>
+          <strong>&#20817;&#25442; USDT</strong>
+          <p>3000 &#31215;&#20998;&#20817;&#25442; 3 &#39029;&#38754; USDT</p>
+        </article>
+        <article>
+          <span>04</span>
+          <strong>&#25552;&#20132;&#36716;&#20986;</strong>
+          <p>&#28385; 10 USDT &#21518;&#30003;&#35831;&#21518;&#21488;&#23457;&#26680;</p>
+        </article>
       </section>
 
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>&#31639;&#21147;&#25910;&#30410;</h2>
-            <p>&#27599;&#22825;&#20940;&#26216;&#25353;&#39029;&#38754; USDT &#27966;&#21457;&#31639;&#21147;&#65306;1 USDT = 100 &#31639;&#21147;&#12290;&#27599; 100 &#31639;&#21147;&#27599;&#26085;&#20135;&#20986; 0.03 USDT&#65292;&#20135;&#20986;&#36827;&#20837;&#39029;&#38754; USDT &#20313;&#39069;&#12290;</p>
+      <div class="layout">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">&#31639;&#21147;&#25910;&#30410;</p>
+              <h2>&#39029;&#38754; USDT &#33258;&#21160;&#29983;&#25104;&#31639;&#21147;</h2>
+              <p>&#27599;&#22825;&#20940;&#26216;&#25353;&#39029;&#38754; USDT &#27966;&#21457;&#31639;&#21147;&#65306;1 USDT = 100 &#31639;&#21147;&#12290;&#27599; 100 &#31639;&#21147;&#27599;&#26085;&#20135;&#20986; 0.03 USDT&#65292;&#20135;&#20986;&#36827;&#20837;&#39029;&#38754; USDT &#20313;&#39069;&#12290;</p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>1. &#36830;&#25509; TP &#38065;&#21253;</h2>
-            <p>&#20808;&#36830;&#25509;&#24182;&#32465;&#23450;&#30331;&#24405;&#29992;&#25143;&#30340; TP &#38065;&#21253;&#22320;&#22336;&#12290;</p>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">&#38065;&#21253;</p>
+              <h2>&#36830;&#25509;&#24182;&#32465;&#23450; TP &#38065;&#21253;</h2>
+              <p>&#32465;&#23450;&#21518;&#65292;&#21518;&#32493; USDT &#36716;&#20986;&#30003;&#35831;&#23558;&#25351;&#21521;&#35813;&#38065;&#21253;&#22320;&#22336;&#12290;</p>
+            </div>
+            <button id="connectWalletBtn" class="primary-btn compact" type="button">&#36830;&#25509;&#24182;&#32465;&#23450;</button>
           </div>
-          <button id="connectWalletBtn" class="primary-btn compact" type="button">&#36830;&#25509;&#24182;&#32465;&#23450;</button>
-        </div>
-        <p id="walletMessage" class="message"></p>
-      </section>
+          <p id="walletMessage" class="message"></p>
+        </section>
 
-      <section class="panel">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">&#36992;&#35831;</p>
+              <h2>&#36992;&#35831;&#22909;&#21451;</h2>
+              <p>&#26032;&#29992;&#25143;&#20351;&#29992;&#20320;&#30340;&#36992;&#35831;&#30721;&#27880;&#20876;&#25104;&#21151;&#21518;&#65292;&#20320;&#33719;&#24471; 599 &#31215;&#20998;&#12290;</p>
+            </div>
+            <button id="copyInviteBtn" class="primary-btn compact" type="button">&#22797;&#21046;&#36992;&#35831;&#30721;</button>
+          </div>
+          <p id="inviteMessage" class="message"></p>
+        </section>
+      </div>
+
+      <section class="panel feature-panel">
         <div class="panel-head">
           <div>
-            <h2>2. &#22635;&#20889;&#38382;&#21367;</h2>
-            <p>&#23436;&#25104; 20 &#39064;&#21518;&#25552;&#20132;&#65292;&#33719;&#24471; 3000 &#31215;&#20998;&#12290;</p>
+            <p class="section-kicker">&#38382;&#21367;&#20219;&#21153;</p>
+            <h2>&#23436;&#25104; 20 &#39064;&#38382;&#21367;&#24182;&#33719;&#24471;&#31215;&#20998;</h2>
+            <p>&#25152;&#26377;&#39064;&#30446;&#23436;&#25104;&#21518;&#21487;&#25552;&#20132;&#65292;&#27599;&#20010;&#29992;&#25143;&#21482;&#33021;&#39046;&#21462;&#19968;&#27425;&#38382;&#21367;&#22870;&#21169;&#12290;</p>
           </div>
-          <strong id="quizProgress">0 / 20</strong>
+          <strong id="quizProgress" class="progress-pill">0 / 20</strong>
         </div>
         <form id="quizForm" class="quiz-form"></form>
         <button id="submitQuizBtn" class="primary-btn wide" type="button">&#25552;&#20132;&#38382;&#21367;&#24182;&#33719;&#24471; 3000 &#31215;&#20998;</button>
         <p id="quizMessage" class="message"></p>
       </section>
 
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>3. &#20817;&#25442;&#39029;&#38754; USDT</h2>
-            <p>3000 &#31215;&#20998;&#21487;&#20817;&#25442;&#25104;&#39029;&#38754;&#20869;&#30340; 3 USDT&#65292;&#19981;&#20250;&#30452;&#25509;&#19979;&#21457;&#21040; TP &#38065;&#21253;&#12290;</p>
-          </div>
-          <button id="redeemBtn" class="primary-btn compact" type="button">&#20817;&#25442; 3 USDT</button>
+      <section class="panel actions-panel">
+        <div>
+          <p class="section-kicker">&#20817;&#25442;</p>
+          <h2>&#31215;&#20998;&#20817;&#25442;&#39029;&#38754; USDT</h2>
+          <p>3000 &#31215;&#20998;&#21487;&#20817;&#25442;&#25104;&#39029;&#38754;&#20869;&#30340; 3 USDT&#65292;&#19981;&#20250;&#30452;&#25509;&#19979;&#21457;&#21040; TP &#38065;&#21253;&#12290;</p>
+          <button id="redeemBtn" class="primary-btn wide" type="button">&#20817;&#25442; 3 USDT</button>
+          <p id="redeemMessage" class="message"></p>
         </div>
-        <p id="redeemMessage" class="message"></p>
+        <div>
+          <p class="section-kicker">&#36716;&#20986;&#30003;&#35831;</p>
+          <h2>&#30003;&#35831;&#36716;&#20986;&#21040; TP &#38065;&#21253;</h2>
+          <p>&#39029;&#38754; USDT &#32047;&#35745;&#36798;&#21040; 10 USDT &#21518;&#21487;&#30003;&#35831;&#36716;&#20986;&#65292;&#38656;&#31561;&#24453;&#21518;&#21488;&#23457;&#26680;&#20801;&#35768;&#12290;</p>
+          <button id="withdrawBtn" class="primary-btn wide" type="button">&#30003;&#35831;&#36716;&#20986;</button>
+          <p id="withdrawMessage" class="message"></p>
+        </div>
       </section>
 
       <section class="panel">
         <div class="panel-head">
           <div>
-            <h2>4. &#30003;&#35831;&#36716;&#20986;&#21040; TP &#38065;&#21253;</h2>
-            <p>&#39029;&#38754; USDT &#32047;&#35745;&#36798;&#21040; 10 USDT &#21518;&#21487;&#30003;&#35831;&#36716;&#20986;&#65292;&#21518;&#21488;&#23457;&#26680;&#20801;&#35768;&#21518;&#65292;&#25165;&#20250;&#19979;&#21457;&#21040;&#24050;&#32465;&#23450;&#30340; TP &#38065;&#21253;&#22320;&#22336;&#12290;</p>
+            <p class="section-kicker">&#23457;&#26680;&#35760;&#24405;</p>
+            <h2>USDT &#36716;&#20986;&#30003;&#35831;</h2>
+            <p>&#25552;&#20132;&#21518;&#20250;&#36827;&#20837;&#21518;&#21488;&#24453;&#23457;&#26680;&#21015;&#34920;&#12290;</p>
           </div>
-          <button id="withdrawBtn" class="primary-btn compact" type="button">&#30003;&#35831;&#36716;&#20986;</button>
         </div>
-        <p id="withdrawMessage" class="message"></p>
         <div id="redeemList" class="record-list"></div>
       </section>
     </main>
