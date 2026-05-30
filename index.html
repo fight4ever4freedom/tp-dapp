@@ -2,38 +2,92 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#101828" />
     <title>TP Wallet DApp</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <section id="authScreen" class="auth-screen">
+      <div class="auth-card">
+        <p class="eyebrow dark">TokenPocket DApp</p>
+        <h1>&#30331;&#24405;&#21518;&#20351;&#29992;</h1>
+        <p class="auth-copy">
+          &#39318;&#27425;&#20351;&#29992;&#38656;&#35201;&#20808;&#29992;&#25104;&#21592;&#36992;&#35831;&#30721;&#27880;&#20876;&#36134;&#21495;&#12290;
+        </p>
+
+        <div class="auth-tabs" role="tablist" aria-label="auth mode">
+          <button id="showLoginBtn" class="auth-tab active" type="button">&#30331;&#24405;</button>
+          <button id="showRegisterBtn" class="auth-tab" type="button">&#27880;&#20876;</button>
+        </div>
+
+        <form id="loginForm" class="auth-form">
+          <label>
+            &#29992;&#25143;&#21517;
+            <input name="username" autocomplete="username" required />
+          </label>
+          <label>
+            &#23494;&#30721;
+            <input name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="primary-btn full-btn" type="submit">&#30331;&#24405;</button>
+        </form>
+
+        <form id="registerForm" class="auth-form hidden">
+          <label>
+            &#29992;&#25143;&#21517;
+            <input name="username" autocomplete="username" minlength="3" required />
+          </label>
+          <label>
+            &#23494;&#30721;
+            <input name="password" type="password" autocomplete="new-password" minlength="6" required />
+          </label>
+          <label>
+            &#36992;&#35831;&#30721;
+            <input name="invite" autocomplete="off" required />
+          </label>
+          <button class="primary-btn full-btn" type="submit">&#27880;&#20876;&#24182;&#30331;&#24405;</button>
+        </form>
+
+        <p id="authMessage" class="auth-message" aria-live="polite"></p>
+      </div>
+    </section>
+
     <main class="app-shell">
       <section class="hero">
         <div>
           <p class="eyebrow">TokenPocket DApp</p>
-          <h1>钱包连接与链上交互</h1>
+          <h1>&#38065;&#21253;&#36830;&#25509;&#19982;&#38142;&#19978;&#20132;&#20114;</h1>
           <p class="hero-copy">
-            在 TP 钱包内置浏览器打开后，可连接 EVM 钱包、查看余额、切换网络、签名消息并发送原生币。
+            &#22312; TP &#38065;&#21253;&#20869;&#32622;&#27983;&#35272;&#22120;&#25171;&#24320;&#65292;&#36830;&#25509;&#38065;&#21253;&#21518;&#21487;&#26597;&#30475;&#20313;&#39069;&#12289;&#20999;&#25442;&#32593;&#32476;&#12289;&#31532;&#21517;&#21644;&#21457;&#36865;&#21407;&#29983;&#24065;&#12290;
           </p>
         </div>
-        <button id="connectBtn" class="primary-btn" type="button">连接钱包</button>
+        <div class="hero-actions">
+          <button id="connectBtn" class="primary-btn" type="button">&#36830;&#25509;&#38065;&#21253;</button>
+          <button id="logoutBtn" class="outline-btn" type="button">&#36864;&#20986;</button>
+        </div>
       </section>
 
-      <section class="status-grid" aria-label="钱包状态">
+      <section id="notice" class="notice" aria-live="polite">
+        &#27491;&#22312;&#26816;&#27979;&#38065;&#21253;&#29615;&#22659;...
+      </section>
+
+      <section class="status-grid" aria-label="wallet status">
         <article class="panel">
-          <span class="label">连接状态</span>
-          <strong id="walletStatus">未连接</strong>
+          <span class="label">&#36830;&#25509;&#29366;&#24577;</span>
+          <strong id="walletStatus">&#26410;&#36830;&#25509;</strong>
         </article>
         <article class="panel">
-          <span class="label">钱包地址</span>
+          <span class="label">&#38065;&#21253;&#22320;&#22336;</span>
           <strong id="accountText">-</strong>
+          <button id="copyAddressBtn" class="mini-btn" type="button" disabled>&#22797;&#21046;</button>
         </article>
         <article class="panel">
-          <span class="label">当前网络</span>
+          <span class="label">&#24403;&#21069;&#32593;&#32476;</span>
           <strong id="networkText">-</strong>
         </article>
         <article class="panel">
-          <span class="label">原生币余额</span>
+          <span class="label">&#21407;&#29983;&#24065;&#20313;&#39069;</span>
           <strong id="balanceText">-</strong>
         </article>
       </section>
@@ -41,8 +95,8 @@
       <section class="workspace">
         <div class="tool-panel">
           <div class="panel-head">
-            <h2>切换网络</h2>
-            <span>选择常见 EVM 链</span>
+            <h2>&#20999;&#25442;&#32593;&#32476;</h2>
+            <span>&#24120;&#29992; EVM &#38142;</span>
           </div>
           <div class="network-list">
             <button class="chain-btn" type="button" data-chain="0x1">Ethereum</button>
@@ -54,39 +108,39 @@
 
         <form id="signForm" class="tool-panel">
           <div class="panel-head">
-            <h2>消息签名</h2>
-            <span>用于登录或确认操作</span>
+            <h2>&#28040;&#24687;&#31532;&#21517;</h2>
+            <span>&#30331;&#24405;&#25110;&#30830;&#35748;&#25805;&#20316;</span>
           </div>
           <label>
-            签名内容
+            &#31532;&#21517;&#20869;&#23481;
             <textarea name="message" rows="4">Hello TokenPocket DApp</textarea>
           </label>
-          <button class="secondary-btn" type="submit">请求签名</button>
+          <button class="secondary-btn" type="submit">&#35831;&#27714;&#31532;&#21517;</button>
         </form>
 
         <form id="sendForm" class="tool-panel">
           <div class="panel-head">
-            <h2>发送原生币</h2>
-            <span>发起链上交易</span>
+            <h2>&#21457;&#36865;&#21407;&#29983;&#24065;</h2>
+            <span>&#21457;&#36215;&#38142;&#19978;&#20132;&#26131;</span>
           </div>
           <label>
-            接收地址
+            &#25509;&#25910;&#22320;&#22336;
             <input name="to" autocomplete="off" placeholder="0x..." />
           </label>
           <label>
-            数量
+            &#25968;&#37327;
             <input name="amount" inputmode="decimal" placeholder="0.01" />
           </label>
-          <button class="secondary-btn" type="submit">发送交易</button>
+          <button id="sendBtn" class="secondary-btn" type="submit">&#21457;&#36865;&#20132;&#26131;</button>
         </form>
       </section>
 
       <section class="result-panel">
         <div class="panel-head">
-          <h2>操作结果</h2>
-          <button id="clearLogBtn" class="ghost-btn" type="button">清空</button>
+          <h2>&#25805;&#20316;&#32467;&#26524;</h2>
+          <button id="clearLogBtn" class="ghost-btn" type="button">&#28165;&#31354;</button>
         </div>
-        <pre id="logBox">等待操作...</pre>
+        <pre id="logBox">&#31561;&#24453;&#25805;&#20316;...</pre>
       </section>
     </main>
 
