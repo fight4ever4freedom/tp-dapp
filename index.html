@@ -74,6 +74,14 @@
 
       <section class="status-grid" aria-label="wallet status">
         <article class="panel">
+          <span class="label">&#24403;&#21069;&#29992;&#25143;</span>
+          <strong id="userText">-</strong>
+        </article>
+        <article class="panel">
+          <span class="label">&#31215;&#20998;</span>
+          <strong id="pointsText">0</strong>
+        </article>
+        <article class="panel">
           <span class="label">&#36830;&#25509;&#29366;&#24577;</span>
           <strong id="walletStatus">&#26410;&#36830;&#25509;</strong>
         </article>
@@ -135,6 +143,48 @@
         </form>
       </section>
 
+      <section class="quiz-panel">
+        <div class="panel-head">
+          <div>
+            <h2>&#21306;&#22359;&#38142;&#19982; TP &#38065;&#21253;&#38382;&#21367;</h2>
+            <span>&#23436;&#25104; 20 &#39064;&#21518;&#21487;&#33719;&#24471; 3000 &#31215;&#20998;</span>
+          </div>
+          <strong id="quizProgress">0 / 20</strong>
+        </div>
+        <form id="quizForm" class="quiz-form"></form>
+        <button id="submitQuizBtn" class="primary-btn quiz-submit" type="button">&#25552;&#20132;&#38382;&#21367;&#24182;&#33719;&#24471; 3000 &#31215;&#20998;</button>
+        <p id="quizMessage" class="quiz-message" aria-live="polite"></p>
+      </section>
+
+      <section class="redeem-panel">
+        <div class="panel-head">
+          <div>
+            <h2>USDT &#20817;&#25442;</h2>
+            <span>3000 &#31215;&#20998;&#21487;&#25552;&#20132;&#20817;&#25442; 3 USDT &#30003;&#35831;</span>
+          </div>
+        </div>
+
+        <div class="redeem-grid">
+          <article class="redeem-box">
+            <span class="label">&#32465;&#23450;&#30340; TP &#38065;&#21253;</span>
+            <strong id="boundWalletText">-</strong>
+            <button id="bindWalletBtn" class="secondary-btn" type="button">&#32465;&#23450;&#24403;&#21069;&#38065;&#21253;</button>
+          </article>
+          <article class="redeem-box">
+            <span class="label">&#20817;&#25442;&#35268;&#21017;</span>
+            <strong>3000 &#31215;&#20998; = 3 USDT</strong>
+            <button id="redeemBtn" class="primary-btn full-btn" type="button">&#25552;&#20132;&#20817;&#25442;&#30003;&#35831;</button>
+          </article>
+        </div>
+
+        <p id="redeemMessage" class="quiz-message" aria-live="polite"></p>
+
+        <div class="redeem-history">
+          <h3>&#20817;&#25442;&#35760;&#24405;</h3>
+          <div id="redeemList" class="redeem-list"></div>
+        </div>
+      </section>
+
       <section class="result-panel">
         <div class="panel-head">
           <h2>&#25805;&#20316;&#32467;&#26524;</h2>
@@ -144,6 +194,8 @@
       </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
