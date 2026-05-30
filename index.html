@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TP Wallet DApp</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">TokenPocket DApp</p>
+          <h1>钱包连接与链上交互</h1>
+          <p class="hero-copy">
+            在 TP 钱包内置浏览器打开后，可连接 EVM 钱包、查看余额、切换网络、签名消息并发送原生币。
+          </p>
+        </div>
+        <button id="connectBtn" class="primary-btn" type="button">连接钱包</button>
+      </section>
+
+      <section class="status-grid" aria-label="钱包状态">
+        <article class="panel">
+          <span class="label">连接状态</span>
+          <strong id="walletStatus">未连接</strong>
+        </article>
+        <article class="panel">
+          <span class="label">钱包地址</span>
+          <strong id="accountText">-</strong>
+        </article>
+        <article class="panel">
+          <span class="label">当前网络</span>
+          <strong id="networkText">-</strong>
+        </article>
+        <article class="panel">
+          <span class="label">原生币余额</span>
+          <strong id="balanceText">-</strong>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <div class="tool-panel">
+          <div class="panel-head">
+            <h2>切换网络</h2>
+            <span>选择常见 EVM 链</span>
+          </div>
+          <div class="network-list">
+            <button class="chain-btn" type="button" data-chain="0x1">Ethereum</button>
+            <button class="chain-btn" type="button" data-chain="0x38">BNB Chain</button>
+            <button class="chain-btn" type="button" data-chain="0x89">Polygon</button>
+            <button class="chain-btn" type="button" data-chain="0xa4b1">Arbitrum</button>
+          </div>
+        </div>
+
+        <form id="signForm" class="tool-panel">
+          <div class="panel-head">
+            <h2>消息签名</h2>
+            <span>用于登录或确认操作</span>
+          </div>
+          <label>
+            签名内容
+            <textarea name="message" rows="4">Hello TokenPocket DApp</textarea>
+          </label>
+          <button class="secondary-btn" type="submit">请求签名</button>
+        </form>
+
+        <form id="sendForm" class="tool-panel">
+          <div class="panel-head">
+            <h2>发送原生币</h2>
+            <span>发起链上交易</span>
+          </div>
+          <label>
+            接收地址
+            <input name="to" autocomplete="off" placeholder="0x..." />
+          </label>
+          <label>
+            数量
+            <input name="amount" inputmode="decimal" placeholder="0.01" />
+          </label>
+          <button class="secondary-btn" type="submit">发送交易</button>
+        </form>
+      </section>
+
+      <section class="result-panel">
+        <div class="panel-head">
+          <h2>操作结果</h2>
+          <button id="clearLogBtn" class="ghost-btn" type="button">清空</button>
+        </div>
+        <pre id="logBox">等待操作...</pre>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
