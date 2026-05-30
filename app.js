@@ -102,6 +102,7 @@ const els = {
   userText: document.querySelector("#userText"),
   pointsText: document.querySelector("#pointsText"),
   usdtBalanceText: document.querySelector("#usdtBalanceText"),
+  powerText: document.querySelector("#powerText"),
   walletText: document.querySelector("#walletText"),
   inviteCodeText: document.querySelector("#inviteCodeText"),
   copyInviteBtn: document.querySelector("#copyInviteBtn"),
@@ -164,6 +165,7 @@ function normalizeProfile(profile) {
         username: profile.username,
         points: Number(profile.points || 0),
         usdtBalance: Number(profile.usdtBalance || 0),
+        power: Number(profile.power || 0),
         quizCompleted: Boolean(profile.quizCompleted),
         boundWallet: profile.boundWallet || "",
         inviteCode: profile.inviteCode || "",
@@ -307,6 +309,7 @@ function renderProfile() {
   els.userText.textContent = currentUser || "-";
   els.pointsText.textContent = String(profile?.points || 0);
   els.usdtBalanceText.textContent = `${Number(profile?.usdtBalance || 0).toFixed(2)} USDT`;
+  els.powerText.textContent = String(Math.floor(Number(profile?.power || 0)));
   els.walletText.textContent = shortAddress(profile?.boundWallet || walletAddress);
   els.inviteCodeText.textContent = profile?.inviteCode || "-";
 
@@ -532,6 +535,7 @@ els.registerForm.addEventListener("submit", async (event) => {
         passwordHash: await hashPassword(password, salt),
         points: 0,
         usdtBalance: 0,
+        power: 0,
         quizCompleted: false,
         boundWallet: "",
         inviteCode: createInviteCode(username),
