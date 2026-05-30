@@ -1,37 +1,14 @@
-const chainConfigs = {
-  "0x1": {
-    chainName: "Ethereum",
-    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-    rpcUrls: ["https://ethereum.publicnode.com"],
-    blockExplorerUrls: ["https://etherscan.io"],
-  },
-  "0x38": {
-    chainName: "BNB Smart Chain",
-    nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-    rpcUrls: ["https://bsc-dataseed.binance.org"],
-    blockExplorerUrls: ["https://bscscan.com"],
-  },
-  "0x89": {
-    chainName: "Polygon",
-    nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
-    rpcUrls: ["https://polygon-rpc.com"],
-    blockExplorerUrls: ["https://polygonscan.com"],
-  },
-  "0xa4b1": {
-    chainName: "Arbitrum One",
-    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-    rpcUrls: ["https://arb1.arbitrum.io/rpc"],
-    blockExplorerUrls: ["https://arbiscan.io"],
-  },
-};
-
 const INVITE_CODE = "TP2026";
+const DB_SESSION_KEY = "tp_dapp_db_session";
 const USERS_KEY = "tp_dapp_users";
 const SESSION_KEY = "tp_dapp_session";
-const DB_SESSION_KEY = "tp_dapp_db_session";
 const QUIZ_REWARD = 3000;
+const REFERRAL_REWARD = 599;
 const REDEEM_COST = 3000;
 const REDEEM_USDT = 3;
+const BSC_CHAIN_ID = "0x38";
+const BSC_USDT = "0x55d398326f99059fF775485246999027B3197955";
+const USDT_DECIMALS = 18;
 
 const quizQuestions = [
   {
@@ -123,36 +100,30 @@ const els = {
   loginForm: document.querySelector("#loginForm"),
   registerForm: document.querySelector("#registerForm"),
   authMessage: document.querySelector("#authMessage"),
+  logoutBtn: document.querySelector("#logoutBtn"),
   userText: document.querySelector("#userText"),
   pointsText: document.querySelector("#pointsText"),
-  connectBtn: document.querySelector("#connectBtn"),
-  logoutBtn: document.querySelector("#logoutBtn"),
-  notice: document.querySelector("#notice"),
-  walletStatus: document.querySelector("#walletStatus"),
-  accountText: document.querySelector("#accountText"),
-  networkText: document.querySelector("#networkText"),
-  balanceText: document.querySelector("#balanceText"),
-  copyAddressBtn: document.querySelector("#copyAddressBtn"),
-  signForm: document.querySelector("#signForm"),
-  sendForm: document.querySelector("#sendForm"),
-  sendBtn: document.querySelector("#sendBtn"),
-  clearLogBtn: document.querySelector("#clearLogBtn"),
+  walletText: document.querySelector("#walletText"),
+  inviteCodeText: document.querySelector("#inviteCodeText"),
+  copyInviteBtn: document.querySelector("#copyInviteBtn"),
+  inviteMessage: document.querySelector("#inviteMessage"),
+  connectWalletBtn: document.querySelector("#connectWalletBtn"),
+  walletMessage: document.querySelector("#walletMessage"),
   quizForm: document.querySelector("#quizForm"),
   quizProgress: document.querySelector("#quizProgress"),
   submitQuizBtn: document.querySelector("#submitQuizBtn"),
   quizMessage: document.querySelector("#quizMessage"),
-  boundWalletText: document.querySelector("#boundWalletText"),
-  bindWalletBtn: document.querySelector("#bindWalletBtn"),
   redeemBtn: document.querySelector("#redeemBtn"),
   redeemMessage: document.querySelector("#redeemMessage"),
   redeemList: document.querySelector("#redeemList"),
-  logBox: document.querySelector("#logBox"),
+  transferForm: document.querySelector("#transferForm"),
+  transferBtn: document.querySelector("#transferBtn"),
+  transferMessage: document.querySelector("#transferMessage"),
 };
 
-let account = "";
-let chainId = "";
 let currentUser = "";
 let currentProfile = null;
+let walletAddress = "";
 
 const supabaseConfig = window.SUPABASE_CONFIG || {};
 const dbClient =
@@ -162,6 +133,19 @@ const dbClient =
 
 function usingDatabase() {
   return Boolean(dbClient);
+}
+
+function provider() {
+  return window.ethereum || window.tp?.ethereum || null;
+}
+
+function shortAddress(address) {
+  return address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "-";
+}
+
+function setMessage(el, message, ok = false) {
+  el.textContent = message;
+  el.classList.toggle("ok", ok);
 }
 
 function dbSessionToken() {
@@ -177,17 +161,16 @@ function clearDbSession() {
 }
 
 function normalizeProfile(profile) {
-  if (!profile) {
-    return null;
-  }
-
-  return {
-    username: profile.username,
-    points: Number(profile.points || 0),
-    quizCompleted: Boolean(profile.quizCompleted),
-    boundWallet: profile.boundWallet || "",
-    redeemRequests: profile.redeemRequests || [],
-  };
+  return profile
+    ? {
+        username: profile.username,
+        points: Number(profile.points || 0),
+        quizCompleted: Boolean(profile.quizCompleted),
+        boundWallet: profile.boundWallet || "",
+        inviteCode: profile.inviteCode || "",
+        redeemRequests: profile.redeemRequests || [],
+      }
+    : null;
 }
 
 async function callRpc(name, params) {
@@ -255,10 +238,12 @@ function writeUsers(users) {
 }
 
 function currentUserRecord() {
-  if (usingDatabase()) {
-    return currentProfile;
-  }
-  return currentUser ? readUsers()[currentUser] : null;
+  return usingDatabase() ? currentProfile : readUsers()[currentUser];
+}
+
+function createInviteCode(username) {
+  const random = createSalt().slice(0, 6).toUpperCase();
+  return `${username.slice(0, 3).toUpperCase()}${random}`;
 }
 
 async function hashPassword(password, salt) {
@@ -268,10 +253,6 @@ async function hashPassword(password, salt) {
 }
 
 function createSalt() {
-  if (crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -283,27 +264,16 @@ function setAuthMode(mode) {
   els.registerForm.classList.toggle("hidden", isLogin);
   els.showLoginBtn.classList.toggle("active", isLogin);
   els.showRegisterBtn.classList.toggle("active", !isLogin);
-  setAuthMessage("");
+  setMessage(els.authMessage, "");
 }
 
-function setAuthMessage(message, ok = false) {
-  els.authMessage.textContent = message;
-  els.authMessage.classList.toggle("ok", ok);
-}
-
-function showAppFor(username, profile = null) {
-  currentUser = username;
-  currentProfile = profile || currentProfile;
+function showApp(profile) {
+  currentProfile = profile;
+  currentUser = profile.username;
+  walletAddress = profile.boundWallet || "";
   els.authScreen.classList.add("hidden");
-  setNotice(
-    usingDatabase()
-      ? `Signed in as ${username}. Database sync is active.`
-      : `Signed in as ${username}. Local demo mode is active.`,
-    "ok"
-  );
-  updateUserStats();
   renderQuiz();
-  refreshWallet().catch((error) => log("Init failed", { message: error.message }));
+  renderProfile();
 }
 
 async function requireAuth() {
@@ -311,90 +281,42 @@ async function requireAuth() {
     try {
       const profile = await dbLoadProfile();
       if (profile?.username) {
-        showAppFor(profile.username, profile);
+        showApp(profile);
         return;
       }
-    } catch (error) {
+    } catch {
       clearDbSession();
-      setAuthMessage(error.message);
     }
   } else {
     const username = localStorage.getItem(SESSION_KEY);
-    if (username && readUsers()[username]) {
-      showAppFor(username);
+    const user = username ? readUsers()[username] : null;
+    if (user) {
+      showApp({ username, ...user });
       return;
     }
-    localStorage.removeItem(SESSION_KEY);
   }
 
   els.authScreen.classList.remove("hidden");
 }
 
-function provider() {
-  return window.ethereum || window.tp?.ethereum || null;
-}
-
-function shortAddress(address) {
-  return address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "-";
-}
-
-function updateUserStats() {
-  const user = currentUserRecord();
+function renderProfile() {
+  const profile = currentUserRecord();
   els.userText.textContent = currentUser || "-";
-  els.pointsText.textContent = String(user?.points || 0);
-  els.boundWalletText.textContent = user?.boundWallet || "-";
-  renderRedeemHistory();
-  if (user?.quizCompleted) {
+  els.pointsText.textContent = String(profile?.points || 0);
+  els.walletText.textContent = shortAddress(profile?.boundWallet || walletAddress);
+  els.inviteCodeText.textContent = profile?.inviteCode || "-";
+
+  if (profile?.quizCompleted) {
     els.submitQuizBtn.disabled = true;
-    els.submitQuizBtn.textContent = "Reward claimed";
-    setQuizMessage("Questionnaire completed. 3000 points claimed.", true);
+    els.submitQuizBtn.textContent = "Questionnaire submitted";
+    setMessage(els.quizMessage, "Questionnaire completed. 3000 points claimed.", true);
   } else {
     els.submitQuizBtn.disabled = false;
     els.submitQuizBtn.textContent = "Submit questionnaire and claim 3000 points";
-    setQuizMessage("");
-  }
-}
-
-function setRedeemMessage(message, ok = false) {
-  els.redeemMessage.textContent = message;
-  els.redeemMessage.classList.toggle("ok", ok);
-}
-
-function redeemStatusLabel(status) {
-  const labels = {
-    pending: "Pending review",
-    paid: "Paid",
-    rejected: "Rejected",
-  };
-  return labels[status] || status;
-}
-
-function renderRedeemHistory() {
-  const records = currentUserRecord()?.redeemRequests || [];
-  if (!records.length) {
-    els.redeemList.innerHTML = '<div class="redeem-record"><span>No redemption records yet.</span></div>';
-    return;
+    setMessage(els.quizMessage, "");
   }
 
-  els.redeemList.innerHTML = records
-    .slice()
-    .reverse()
-    .map(
-      (record) => `
-        <article class="redeem-record">
-          <strong>${redeemStatusLabel(record.status)} - ${record.usdtAmount} USDT</strong>
-          <span>Wallet: ${record.wallet}</span>
-          <span>Request ID: ${record.id}</span>
-          <span>Time: ${new Date(record.createdAt).toLocaleString()}</span>
-        </article>
-      `
-    )
-    .join("");
-}
-
-function setQuizMessage(message, ok = false) {
-  els.quizMessage.textContent = message;
-  els.quizMessage.classList.toggle("ok", ok);
+  renderRedeemHistory();
 }
 
 function renderQuiz() {
@@ -423,187 +345,220 @@ function renderQuiz() {
 }
 
 function updateQuizProgress() {
-  const answered = quizQuestions.filter((_, index) => {
-    return Boolean(new FormData(els.quizForm).get(`q${index}`));
-  }).length;
+  const formData = new FormData(els.quizForm);
+  const answered = quizQuestions.filter((_, index) => Boolean(formData.get(`q${index}`))).length;
   els.quizProgress.textContent = `${answered} / ${quizQuestions.length}`;
 }
 
-function log(message, payload) {
-  const time = new Date().toLocaleTimeString();
-  const body = payload ? `\n${JSON.stringify(payload, null, 2)}` : "";
-  els.logBox.textContent = `[${time}] ${message}${body}`;
+function renderRedeemHistory() {
+  const records = currentUserRecord()?.redeemRequests || [];
+  if (!records.length) {
+    els.redeemList.innerHTML = '<div class="record"><span>No USDT payout request yet.</span></div>';
+    return;
+  }
+
+  els.redeemList.innerHTML = records
+    .slice()
+    .reverse()
+    .map(
+      (record) => `
+        <article class="record">
+          <strong>${record.status || "pending"} - ${record.usdtAmount || 3} USDT</strong>
+          <span>Wallet: ${record.wallet}</span>
+          <span>Request ID: ${record.id}</span>
+          <span>Time: ${new Date(record.createdAt).toLocaleString()}</span>
+        </article>
+      `
+    )
+    .join("");
 }
 
-function setNotice(message, tone = "") {
-  els.notice.textContent = message;
-  els.notice.className = `notice ${tone}`.trim();
+async function connectAndBindWallet() {
+  const walletProvider = provider();
+  if (!walletProvider) {
+    throw new Error("Open this page inside TP Wallet DApp browser.");
+  }
+
+  const accounts = await walletProvider.request({ method: "eth_requestAccounts" });
+  walletAddress = accounts[0] || "";
+  if (!walletAddress) {
+    throw new Error("Wallet connection failed.");
+  }
+
+  if (usingDatabase()) {
+    currentProfile = await dbBindWallet(walletAddress);
+  } else {
+    const users = readUsers();
+    users[currentUser].boundWallet = walletAddress;
+    users[currentUser].redeemRequests = users[currentUser].redeemRequests || [];
+    writeUsers(users);
+    currentProfile = { username: currentUser, ...users[currentUser] };
+  }
+
+  renderProfile();
 }
 
-function setBusy(isBusy, text) {
-  els.connectBtn.disabled = isBusy;
-  if (text) {
-    els.connectBtn.textContent = text;
-  } else if (!isBusy) {
-    els.connectBtn.textContent = account ? "Refresh wallet" : "Connect wallet";
+async function claimQuizReward() {
+  const formData = new FormData(els.quizForm);
+  const answered = quizQuestions.filter((_, index) => Boolean(formData.get(`q${index}`))).length;
+  if (answered < quizQuestions.length) {
+    throw new Error(`Please answer all 20 questions. Current progress: ${answered} / ${quizQuestions.length}.`);
+  }
+
+  if (usingDatabase()) {
+    currentProfile = await dbClaimQuizReward();
+  } else {
+    const users = readUsers();
+    const user = users[currentUser];
+    if (user.quizCompleted) {
+      throw new Error("Questionnaire reward already claimed.");
+    }
+    user.points = Number(user.points || 0) + QUIZ_REWARD;
+    user.quizCompleted = true;
+    user.redeemRequests = user.redeemRequests || [];
+    writeUsers(users);
+    currentProfile = { username: currentUser, ...user };
+  }
+
+  renderProfile();
+}
+
+async function createRedeemRequest() {
+  const profile = currentUserRecord();
+  if (!profile?.boundWallet) {
+    throw new Error("Please connect and bind your TP wallet first.");
+  }
+
+  if (Number(profile.points || 0) < REDEEM_COST) {
+    throw new Error(`Insufficient points. Need ${REDEEM_COST} points.`);
+  }
+
+  if (usingDatabase()) {
+    currentProfile = await dbCreateRedeemRequest();
+  } else {
+    const users = readUsers();
+    const user = users[currentUser];
+    user.points = Number(user.points || 0) - REDEEM_COST;
+    user.redeemRequests = user.redeemRequests || [];
+    user.redeemRequests.push({
+      id: `R${Date.now()}`,
+      status: "pending",
+      pointsCost: REDEEM_COST,
+      usdtAmount: REDEEM_USDT,
+      wallet: user.boundWallet,
+      createdAt: new Date().toISOString(),
+    });
+    writeUsers(users);
+    currentProfile = { username: currentUser, ...user };
+  }
+
+  renderProfile();
+}
+
+async function ensureBscNetwork() {
+  const walletProvider = provider();
+  const chainId = await walletProvider.request({ method: "eth_chainId" });
+  if (chainId === BSC_CHAIN_ID) {
+    return;
+  }
+
+  try {
+    await walletProvider.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: BSC_CHAIN_ID }],
+    });
+  } catch (error) {
+    if (error.code !== 4902) {
+      throw error;
+    }
+
+    await walletProvider.request({
+      method: "wallet_addEthereumChain",
+      params: [
+        {
+          chainId: BSC_CHAIN_ID,
+          chainName: "BNB Smart Chain",
+          nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+          rpcUrls: ["https://bsc-dataseed.binance.org"],
+          blockExplorerUrls: ["https://bscscan.com"],
+        },
+      ],
+    });
   }
 }
 
-function setTransactionBusy(isBusy) {
-  els.connectBtn.disabled = isBusy;
-  els.sendBtn.disabled = isBusy;
-  els.sendBtn.textContent = isBusy ? "Confirm in wallet" : "Send transaction";
-}
-
-function hexToDecimal(hex) {
-  return BigInt(hex || "0x0");
-}
-
-function decimalToHex(value) {
-  return `0x${value.toString(16)}`;
-}
-
-function parseUnits(value, decimals = 18) {
+function parseUnits(value, decimals) {
   const normalized = String(value).trim();
   if (!/^\d+(\.\d+)?$/.test(normalized)) {
-    throw new Error("Invalid amount");
+    throw new Error("Invalid USDT amount.");
   }
-
   const [whole, fraction = ""] = normalized.split(".");
   const padded = `${fraction}${"0".repeat(decimals)}`.slice(0, decimals);
   return BigInt(whole) * 10n ** BigInt(decimals) + BigInt(padded);
 }
 
-function formatUnits(value, decimals = 18) {
-  const base = 10n ** BigInt(decimals);
-  const whole = value / base;
-  const fraction = String(value % base).padStart(decimals, "0").slice(0, 6);
-  return `${whole}.${fraction}`.replace(/\.?0+$/, "");
+function encodeErc20Transfer(to, amount) {
+  const cleanTo = to.toLowerCase().replace(/^0x/, "");
+  const amountHex = amount.toString(16).padStart(64, "0");
+  return `0xa9059cbb${cleanTo.padStart(64, "0")}${amountHex}`;
 }
 
-async function request(method, params) {
-  const walletProvider = provider();
-  if (!walletProvider) {
-    throw new Error("Wallet provider not found. Open this page inside TokenPocket.");
-  }
-  return walletProvider.request({ method, params });
-}
-
-async function refreshWallet() {
-  const walletProvider = provider();
-  if (!walletProvider) {
-    setNotice("No wallet provider found. Open this URL inside TokenPocket DApp browser.", "warn");
-    els.walletStatus.textContent = "No wallet";
-    els.accountText.textContent = "Open in TP Wallet";
-    els.copyAddressBtn.disabled = true;
-    return;
+async function transferUsdt(to, amount) {
+  if (!/^0x[a-fA-F0-9]{40}$/.test(to)) {
+    throw new Error("Invalid recipient address.");
   }
 
-  const accounts = await request("eth_accounts");
-  account = accounts[0] || "";
-  chainId = await request("eth_chainId");
+  const walletProvider = provider();
+  if (!walletProvider) {
+    throw new Error("Open this page inside TP Wallet DApp browser.");
+  }
 
-  els.walletStatus.textContent = account ? "Connected" : "Not connected";
-  els.walletStatus.classList.toggle("is-ok", Boolean(account));
-  els.accountText.textContent = account ? shortAddress(account) : "-";
-  els.networkText.textContent = chainConfigs[chainId]?.chainName || chainId || "-";
-  els.connectBtn.textContent = account ? "Refresh wallet" : "Connect wallet";
-  els.copyAddressBtn.disabled = !account;
-  setNotice(
-    account ? "Wallet connected. You can sign messages or send native token now." : "Wallet detected. Tap Connect wallet to continue.",
-    account ? "ok" : ""
-  );
+  if (!walletAddress) {
+    await connectAndBindWallet();
+  }
 
-  document.querySelectorAll(".chain-btn").forEach((button) => {
-    button.classList.toggle("active", button.dataset.chain === chainId);
+  await ensureBscNetwork();
+  const value = parseUnits(amount, USDT_DECIMALS);
+  const txHash = await walletProvider.request({
+    method: "eth_sendTransaction",
+    params: [
+      {
+        from: walletAddress,
+        to: BSC_USDT,
+        data: encodeErc20Transfer(to, value),
+        value: "0x0",
+      },
+    ],
   });
 
-  if (account) {
-    const balanceHex = await request("eth_getBalance", [account, "latest"]);
-    const symbol = chainConfigs[chainId]?.nativeCurrency.symbol || "ETH";
-    els.balanceText.textContent = `${formatUnits(hexToDecimal(balanceHex))} ${symbol}`;
-  } else {
-    els.balanceText.textContent = "-";
-  }
+  return txHash;
 }
-
-async function connectWallet() {
-  setBusy(true, "Connecting...");
-  try {
-    const accounts = await request("eth_requestAccounts");
-    account = accounts[0] || "";
-    await refreshWallet();
-    log("Wallet connected", { account, chainId });
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function switchChain(targetChainId) {
-  setNotice(`Switching to ${chainConfigs[targetChainId]?.chainName || targetChainId}...`);
-  try {
-    await request("wallet_switchEthereumChain", [{ chainId: targetChainId }]);
-  } catch (error) {
-    if (error.code === 4902 && chainConfigs[targetChainId]) {
-      await request("wallet_addEthereumChain", [
-        { chainId: targetChainId, ...chainConfigs[targetChainId] },
-      ]);
-    } else {
-      throw error;
-    }
-  }
-
-  await refreshWallet();
-  log("Network switched", { chainId: targetChainId, name: chainConfigs[targetChainId]?.chainName });
-}
-
-async function signMessage(message) {
-  if (!account) {
-    await connectWallet();
-  }
-  const signature = await request("personal_sign", [message, account]);
-  log("Message signed", { account, message, signature });
-}
-
-async function sendNativeToken(to, amount) {
-  if (!account) {
-    await connectWallet();
-  }
-
-  if (!/^0x[a-fA-F0-9]{40}$/.test(to)) {
-    throw new Error("Invalid recipient address");
-  }
-
-  const value = decimalToHex(parseUnits(amount));
-  setTransactionBusy(true);
-  try {
-    const txHash = await request("eth_sendTransaction", [{ from: account, to, value }]);
-    const explorer = chainConfigs[chainId]?.blockExplorerUrls?.[0];
-    log("Transaction submitted", { txHash, explorer: explorer ? `${explorer}/tx/${txHash}` : null });
-    setNotice("Transaction submitted. Check the hash in the result box.", "ok");
-  } finally {
-    setTransactionBusy(false);
-  }
-}
-
-els.connectBtn.addEventListener("click", () => {
-  connectWallet().catch((error) => log("Connect failed", { message: error.message, code: error.code }));
-});
-
-els.logoutBtn.addEventListener("click", () => {
-  localStorage.removeItem(SESSION_KEY);
-  clearDbSession();
-  account = "";
-  chainId = "";
-  currentUser = "";
-  currentProfile = null;
-  els.authScreen.classList.remove("hidden");
-  setAuthMode("login");
-  log("Signed out");
-});
 
 els.showLoginBtn.addEventListener("click", () => setAuthMode("login"));
 els.showRegisterBtn.addEventListener("click", () => setAuthMode("register"));
+
+els.loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = new FormData(els.loginForm);
+  const username = String(data.get("username")).trim().toLowerCase();
+  const password = String(data.get("password"));
+
+  try {
+    if (usingDatabase()) {
+      showApp(await dbLogin(username, password));
+    } else {
+      const user = readUsers()[username];
+      if (!user || (await hashPassword(password, user.salt)) !== user.passwordHash) {
+        throw new Error("Wrong username or password.");
+      }
+      localStorage.setItem(SESSION_KEY, username);
+      showApp({ username, ...user });
+    }
+    els.loginForm.reset();
+  } catch (error) {
+    setMessage(els.authMessage, error.message);
+  }
+});
 
 els.registerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -614,255 +569,112 @@ els.registerForm.addEventListener("submit", async (event) => {
 
   try {
     if (usingDatabase()) {
-      const profile = await dbRegister(username, password, invite);
-      setAuthMessage("Registered successfully.", true);
-      els.registerForm.reset();
-      showAppFor(profile.username, profile);
-      return;
+      showApp(await dbRegister(username, password, invite));
+    } else {
+      const users = readUsers();
+      if (users[username]) {
+        throw new Error("Username already exists.");
+      }
+      const referrer = Object.entries(users).find(([, user]) => user.inviteCode === invite);
+      if (invite !== INVITE_CODE && !referrer) {
+        throw new Error("Invalid invite code.");
+      }
+      const salt = createSalt();
+      users[username] = {
+        salt,
+        passwordHash: await hashPassword(password, salt),
+        points: 0,
+        quizCompleted: false,
+        boundWallet: "",
+        inviteCode: createInviteCode(username),
+        redeemRequests: [],
+      };
+      if (invite !== INVITE_CODE) {
+        users[referrer[0]].points = Number(users[referrer[0]].points || 0) + REFERRAL_REWARD;
+      }
+      writeUsers(users);
+      localStorage.setItem(SESSION_KEY, username);
+      showApp({ username, ...users[username] });
     }
-
-    if (invite !== INVITE_CODE) {
-      setAuthMessage("Invalid invite code.");
-      return;
-    }
-
-    const users = readUsers();
-    if (users[username]) {
-      setAuthMessage("Username already exists.");
-      return;
-    }
-
-    const salt = createSalt();
-    users[username] = {
-      salt,
-      passwordHash: await hashPassword(password, salt),
-      points: 0,
-      quizCompleted: false,
-      boundWallet: "",
-      redeemRequests: [],
-      createdAt: new Date().toISOString(),
-    };
-    writeUsers(users);
-    localStorage.setItem(SESSION_KEY, username);
-    setAuthMessage("Registered successfully.", true);
     els.registerForm.reset();
-    showAppFor(username);
   } catch (error) {
-    setAuthMessage(error.message);
+    setMessage(els.authMessage, error.message);
   }
 });
 
-els.loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const data = new FormData(els.loginForm);
-  const username = String(data.get("username")).trim().toLowerCase();
-  const password = String(data.get("password"));
+els.logoutBtn.addEventListener("click", () => {
+  clearDbSession();
+  localStorage.removeItem(SESSION_KEY);
+  currentUser = "";
+  currentProfile = null;
+  walletAddress = "";
+  els.authScreen.classList.remove("hidden");
+  setAuthMode("login");
+});
 
+els.copyInviteBtn.addEventListener("click", async () => {
+  const inviteCode = currentUserRecord()?.inviteCode;
+  if (!inviteCode) {
+    setMessage(els.inviteMessage, "Invite code is not ready.");
+    return;
+  }
+  await navigator.clipboard.writeText(inviteCode);
+  setMessage(els.inviteMessage, "Invite code copied.", true);
+});
+
+els.connectWalletBtn.addEventListener("click", async () => {
   try {
-    if (usingDatabase()) {
-      const profile = await dbLogin(username, password);
-      els.loginForm.reset();
-      showAppFor(profile.username, profile);
-      return;
-    }
-
-    const user = readUsers()[username];
-    if (!user || (await hashPassword(password, user.salt)) !== user.passwordHash) {
-      setAuthMessage("Wrong username or password.");
-      return;
-    }
-
-    localStorage.setItem(SESSION_KEY, username);
-    els.loginForm.reset();
-    showAppFor(username);
+    els.connectWalletBtn.disabled = true;
+    await connectAndBindWallet();
+    setMessage(els.walletMessage, "TP wallet connected and bound.", true);
   } catch (error) {
-    setAuthMessage(error.message);
+    setMessage(els.walletMessage, error.message);
+  } finally {
+    els.connectWalletBtn.disabled = false;
   }
 });
 
 els.quizForm.addEventListener("change", updateQuizProgress);
 
-els.submitQuizBtn.addEventListener("click", () => {
-  submitQuizReward().catch((error) => setQuizMessage(error.message));
-});
-
-async function submitQuizReward() {
-  if (!currentUser) {
-    setQuizMessage("Please sign in first.");
-    return;
-  }
-
-  const formData = new FormData(els.quizForm);
-  const answered = quizQuestions.filter((_, index) => Boolean(formData.get(`q${index}`))).length;
-  if (answered < quizQuestions.length) {
-    setQuizMessage(`Please answer all 20 questions. Current progress: ${answered} / ${quizQuestions.length}.`);
-    return;
-  }
-
-  if (usingDatabase()) {
-    currentProfile = await dbClaimQuizReward();
-    updateUserStats();
-    log("Questionnaire reward claimed", {
-      username: currentUser,
-      reward: QUIZ_REWARD,
-      totalPoints: currentProfile.points,
-      source: "supabase",
-    });
-    return;
-  }
-
-  const users = readUsers();
-  const user = users[currentUser];
-  if (!user) {
-    setQuizMessage("User record not found. Please sign in again.");
-    return;
-  }
-
-  if (user.quizCompleted) {
-    setQuizMessage("You have already claimed this reward.", true);
-    updateUserStats();
-    return;
-  }
-
-  user.points = Number(user.points || 0) + QUIZ_REWARD;
-  user.quizCompleted = true;
-  user.quizCompletedAt = new Date().toISOString();
-  users[currentUser] = user;
-  writeUsers(users);
-  updateUserStats();
-  log("Questionnaire reward claimed", { username: currentUser, reward: QUIZ_REWARD, totalPoints: user.points });
-}
-
-els.bindWalletBtn.addEventListener("click", async () => {
+els.submitQuizBtn.addEventListener("click", async () => {
   try {
-    if (!currentUser) {
-      setRedeemMessage("Please sign in first.");
-      return;
-    }
-
-    if (!account) {
-      await connectWallet();
-    }
-
-    if (!account) {
-      setRedeemMessage("Wallet connection failed.");
-      return;
-    }
-
-    if (usingDatabase()) {
-      currentProfile = await dbBindWallet(account);
-      updateUserStats();
-      setRedeemMessage("Wallet bound successfully.", true);
-      log("Wallet bound", { username: currentUser, wallet: account, source: "supabase" });
-      return;
-    }
-
-    const users = readUsers();
-    const user = users[currentUser];
-    user.boundWallet = account;
-    user.boundWalletAt = new Date().toISOString();
-    users[currentUser] = user;
-    writeUsers(users);
-    updateUserStats();
-    setRedeemMessage("Wallet bound successfully.", true);
-    log("Wallet bound", { username: currentUser, wallet: account });
+    els.submitQuizBtn.disabled = true;
+    await claimQuizReward();
+    setMessage(els.quizMessage, "Submitted successfully. 3000 points claimed.", true);
   } catch (error) {
-    setRedeemMessage(error.message || "Wallet binding failed.");
+    setMessage(els.quizMessage, error.message);
+    renderProfile();
   }
 });
 
-els.redeemBtn.addEventListener("click", () => {
-  createRedeemRequest().catch((error) => setRedeemMessage(error.message));
+els.redeemBtn.addEventListener("click", async () => {
+  try {
+    els.redeemBtn.disabled = true;
+    await createRedeemRequest();
+    setMessage(els.redeemMessage, "Payout request submitted. Please wait for USDT release.", true);
+  } catch (error) {
+    setMessage(els.redeemMessage, error.message);
+  } finally {
+    els.redeemBtn.disabled = false;
+  }
 });
 
-async function createRedeemRequest() {
-  if (!currentUser) {
-    setRedeemMessage("Please sign in first.");
-    return;
-  }
-
-  if (usingDatabase()) {
-    currentProfile = await dbCreateRedeemRequest();
-    updateUserStats();
-    setRedeemMessage("Redemption request submitted. Please wait for manual review.", true);
-    log("USDT redemption request submitted", {
-      username: currentUser,
-      source: "supabase",
-      pointsCost: REDEEM_COST,
-      usdtAmount: REDEEM_USDT,
-    });
-    return;
-  }
-
-  const users = readUsers();
-  const user = users[currentUser];
-  if (!user?.boundWallet) {
-    setRedeemMessage("Please bind your TP wallet first.");
-    return;
-  }
-
-  if (Number(user.points || 0) < REDEEM_COST) {
-    setRedeemMessage(`Insufficient points. Need ${REDEEM_COST} points.`);
-    return;
-  }
-
-  user.points = Number(user.points || 0) - REDEEM_COST;
-  user.redeemRequests = user.redeemRequests || [];
-  const request = {
-    id: `R${Date.now()}`,
-    status: "pending",
-    pointsCost: REDEEM_COST,
-    usdtAmount: REDEEM_USDT,
-    wallet: user.boundWallet,
-    createdAt: new Date().toISOString(),
-  };
-  user.redeemRequests.push(request);
-  users[currentUser] = user;
-  writeUsers(users);
-  updateUserStats();
-  setRedeemMessage("Redemption request submitted. Please wait for manual review.", true);
-  log("USDT redemption request submitted", request);
-}
-
-document.querySelectorAll(".chain-btn").forEach((button) => {
-  button.addEventListener("click", () => {
-    switchChain(button.dataset.chain).catch((error) => {
-      log("Network switch failed", { message: error.message, code: error.code });
-    });
-  });
-});
-
-els.signForm.addEventListener("submit", (event) => {
+els.transferForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  signMessage(new FormData(els.signForm).get("message")).catch((error) => {
-    log("Sign failed", { message: error.message, code: error.code });
-  });
-});
+  const data = new FormData(els.transferForm);
 
-els.sendForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const data = new FormData(els.sendForm);
-  sendNativeToken(data.get("to"), data.get("amount")).catch((error) => {
-    log("Send failed", { message: error.message, code: error.code });
-  });
-});
-
-els.clearLogBtn.addEventListener("click", () => {
-  els.logBox.textContent = "Waiting...";
-});
-
-els.copyAddressBtn.addEventListener("click", async () => {
-  if (!account) {
-    return;
+  try {
+    els.transferBtn.disabled = true;
+    els.transferBtn.textContent = "等待 TP 钱包确认";
+    const txHash = await transferUsdt(data.get("to"), data.get("amount"));
+    setMessage(els.transferMessage, `USDT transfer submitted: ${txHash}`, true);
+    els.transferForm.reset();
+  } catch (error) {
+    setMessage(els.transferMessage, error.message);
+  } finally {
+    els.transferBtn.disabled = false;
+    els.transferBtn.textContent = "从 TP 钱包转出 USDT";
   }
-  await navigator.clipboard.writeText(account);
-  log("Address copied", { account });
 });
-
-const walletProvider = provider();
-if (walletProvider) {
-  walletProvider.on?.("accountsChanged", refreshWallet);
-  walletProvider.on?.("chainChanged", refreshWallet);
-}
 
 requireAuth();
